@@ -47,11 +47,8 @@ namespace SRP.ControlDigit
             return sum;
         }
 
-        public static int GetControlDigit(this int number, int coef)
-        {
-            var result = number % coef;
-            return result != 0 ? coef - result : result;
-        }
+        public static int GetControlDigit(this int number, int coef) 
+			=> number % coef != 0 ? coef -  number % coef :  number % coef;
     }
 }
 
