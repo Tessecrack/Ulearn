@@ -1,34 +1,37 @@
-﻿using System;
+using System;
+
 namespace Incapsulation.Weights
 {
 	public class Indexer
     {
+        private readonly int startIndex;
+        public int Length { get; set; }
         private readonly double[] array;
-        public int Length { get; }
-        public int begin;
-        public Indexer(double[] range, int start, int length)
+        public Indexer(double[] array, int start, int length)
         {
-            if (start < 0 || length < 0 ||
-                range.Length < length ||
-                start > range.Length ||
-                start + length == range.Length + 1) throw new ArgumentException();
-            array = range;
-            Length = length;
-            begin = start;
+            if (start < 0 
+                || start > array.Length 
+                || length < 0 
+                || length > array.Length 
+                || start + length > array.Length)
+                throw new ArgumentException();
+            this.array = array;
+            startIndex = start;
+            this.Length = length;
         }
+
         public double this[int index]
         {
-            get
-            {
-                if (index >= 0 && index < Length)
-                    return this.array[begin + index];
-                else throw new IndexOutOfRangeException();
-            }
+            get => index >= 0 && index < array.Length && index < Length ? array[startIndex + index] 
+				: throw new IndexOutOfRangeException();
             set
             {
                 if (index >= 0 && index < Length)
-                    this.array[begin + index] = value;
-                else throw new IndexOutOfRangeException();
+                    array[startIndex + index] = value;
+                else
+                {
+                    throw new IndexOutOfRangeException();
+                }
             }
         }
     }
