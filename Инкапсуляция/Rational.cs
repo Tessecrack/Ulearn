@@ -1,125 +1,106 @@
-﻿using System;
+using System;
+
 namespace Incapsulation.RationalNumbers
 {
     public class Rational
     {
         public int Numerator { get; set; }
-
         public int Denominator { get; set; }
-
-        public bool IsNan
-        {
-            get => Denominator == 0;
-        }
-
+        public bool IsNan => Denominator == 0;
         public Rational(int numerator, int denominator = 1)
         {
-            if (denominator != 0)
-                Reduce(ref numerator, ref denominator);
             Numerator = numerator;
             Denominator = denominator;
-            
+            if (!IsNan) FractionReduction(this);
+            if (Numerator == 0 && Denominator != 0) Denominator = 1;
+            FromNegativeToPositive();
         }
-        private void ReduceTwo(ref int numerator, ref int denominator)
+		
+        private void FromNegativeToPositive()
         {
-            if (numerator % 2 == 0 && denominator % 2 == 0)
+            if (Numerator < 0 && Denominator < 0 || Numerator > 0 && Denominator < 0) 
             {
-                numerator /= 2;
-                denominator /= 2;
-            }
-        }
-        private void ReduceThree(ref int numerator, ref int denominator)
-        {
-            if (numerator % 3 == 0 && denominator % 3 == 0)
-            {
-                numerator /= 3;
-                denominator /= 3;
-            }
-        }
-        private void ReduceFive(ref int numerator, ref int denominator)
-        {
-            if (numerator % 5 == 0 && denominator % 5 == 0)
-            {
-                numerator /= 5;
-                denominator /= 5;
-            }
-        }
-        private void Reduce(ref int numerator, ref int denominator)
-        {
-            if (numerator < 0 && denominator < 0 || denominator < 0) 
-            {
-                numerator *= -1; denominator *= -1;
-            }
-            while (numerator % 2 == 0 && denominator % 2 == 0 || 
-                numerator % 3 == 0 && denominator % 3 == 0 ||
-                numerator % 5 == 0 && denominator % 5 == 0 )
-            {
-                ReduceTwo(ref numerator, ref denominator);
-                ReduceThree(ref numerator, ref denominator);
-                ReduceFive(ref numerator, ref denominator);
+                Numerator *= (-1);
+                Denominator *= (-1);
             }
         }
 
-        public static Rational operator +(Rational rat1, Rational rat2)
-        {
-            if (rat1.IsNan || rat2.IsNan) return new Rational(0, 0);
-            int numerator, denominator;
-            if (rat1.Denominator != rat2.Denominator)
-            {
-                denominator = rat1.Denominator * rat2.Denominator;
-                numerator = rat1.Numerator * (denominator / rat1.Denominator) + rat2.Numerator * (denominator / rat2.Denominator);
-            }
-            else
-            {
-                denominator = rat1.Denominator;
-                numerator = rat1.Numerator + rat2.Numerator;
-            }
-            return new Rational(numerator, denominator);
-        }
-        public static Rational operator -(Rational rat1, Rational rat2)
-        {
-            if (rat1.IsNan || rat2.IsNan) return new Rational(0, 0);
-            int numerator, denominator;
-            if (rat1.Denominator != rat2.Denominator)
-            {
-                denominator = rat1.Denominator * rat2.Denominator;
-                numerator = rat1.Numerator * (denominator / rat1.Denominator) - rat2.Numerator * (denominator / rat2.Denominator);
-            }
-            else
-            {
-                denominator = rat1.Denominator;
-                numerator = rat1.Numerator + rat2.Numerator;
-            }
-            return new Rational(numerator, denominator);
-        }
-        public static Rational operator *(Rational rat1, Rational rat2)
-        {
-            var numerator = rat1.Numerator * rat2.Numerator;
-            var denominator = rat1.Denominator * rat2.Denominator;
-            return new Rational(numerator, denominator);
-        }
-        public static Rational operator /(Rational rat1, Rational rat2)
-        {
-            if (rat1.IsNan || rat2.IsNan)
-                return new Rational(0, 0);
-            var numerator = rat1.Numerator * rat2.Denominator;
-            var denominator = rat1.Denominator * rat2.Numerator;
 
-            if (rat2.Numerator < 0)
+        public static Rational operator +(Rational ratioFirst, Rational ratioSecond)
+        {
+            int generalDenominator = 0, generalNumerator = 1;
+            if (!ratioFirst.IsNan && !ratioSecond.IsNan)
             {
-                numerator *= -1;
-                denominator *= -1;
+                generalDenominator = ratioFirst.Denominator * ratioSecond.Denominator;
+                generalNumerator = (generalDenominator / ratioFirst.Denominator) * ratioFirst.Numerator
+                    + (generalDenominator / ratioSecond.Denominator) * ratioSecond.Numerator;
             }
-            Rational rat = new Rational(numerator, denominator);
-            return rat;
+            var result = new Rational(generalNumerator, generalDenominator);
+            FractionReduction(result);
+            return result;
         }
 
-        public static implicit operator double(Rational rat) => rat.Denominator == 0 ?
-            double.NaN :
-            (double)((double)rat.Numerator / (double)rat.Denominator);
-        public static implicit operator Rational(int val) => new Rational(numerator: val);
-        public static implicit operator int(Rational rat) => rat.Numerator % rat.Denominator == 0 ?
-            rat.Numerator / rat.Denominator :
+        public static Rational operator -(Rational ratioFirst, Rational ratioSecond)
+        {
+            int generalDenominator = 0, generalNumerator = 1;
+            if (!ratioFirst.IsNan && !ratioSecond.IsNan)
+            {
+                generalDenominator = ratioFirst.Denominator * ratioSecond.Denominator;
+                generalNumerator = (generalDenominator / ratioFirst.Denominator) * ratioFirst.Numerator
+                    - (generalDenominator / ratioSecond.Denominator) * ratioSecond.Numerator;
+            }
+            var result = new Rational(generalNumerator, generalDenominator);
+            FractionReduction(result);
+            return result;
+        }
+
+        public static Rational operator *(Rational ratioFirst, Rational ratioSecond)
+        {
+            var result = new Rational(ratioFirst.Numerator * ratioSecond.Numerator,
+                ratioFirst.Denominator * ratioSecond.Denominator);
+            FractionReduction(result);
+            return result;
+        }
+
+        public static Rational operator /(Rational ratioFirst, Rational ratioSecond)
+        {
+            int generalDenominator = 0, generalNumerator = 1;
+            if (!ratioFirst.IsNan && !ratioSecond.IsNan)
+            {
+                generalDenominator = ratioFirst.Denominator * ratioSecond.Numerator;
+                generalNumerator = ratioFirst.Numerator * ratioSecond.Denominator;
+            }
+            var result = new Rational(generalNumerator, generalDenominator);
+            FractionReduction(result);
+            return result;
+        }
+
+        public static implicit operator double(Rational ratio)
+            => ratio.IsNan ? double.NaN : (double)((double)ratio.Numerator / (double)ratio.Denominator);
+
+        public static implicit operator Rational(int value) => new Rational(value);
+
+        public static implicit operator int(Rational ratio) => ratio.Numerator % ratio.Denominator == 0 ? 
+            ratio.Numerator / ratio.Denominator :
             throw new System.Exception();
+
+        private static void FractionReduction(Rational number)
+        {
+            if (number.IsNan) return;
+            ValueReduction(number, 2);
+            ValueReduction(number, 3);
+            ValueReduction(number, 5);
+            ValueReduction(number, 7);
+        }
+
+        private static void ValueReduction(Rational number, int value)
+        {
+            if (number.Numerator % value == 0 && number.Denominator % value == 0)
+            {
+                number.Numerator /= value;
+                number.Denominator /= value;
+                FractionReduction(number);
+            }
+        }
     }
 }
