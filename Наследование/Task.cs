@@ -1,77 +1,65 @@
-﻿using System;
+// Вставьте сюда финальное содержимое файла Task.cs
+using System;
 
 namespace Inheritance.MapObjects
 {
-    interface IOwnerChecker
+    interface IOwner
     {
-        void OwnerEqualsPlayerId(Player player);
+        int Owner { get; set; }
     }
-    interface ICheckerArmy
+	
+    interface IArmy
     {
-        bool CheckPlayerCanBeatArmy(Player player);
+        Army Army { get; set; }
     }
-    interface IConsumerTreasure 
+	
+    interface ITreasure
     {
-        void ConsumerTreasure(Player player);
-    }
-
-    public class Dwelling : IOwnerChecker
-    {
-        public int Owner { get; set; } //владелец
-        public void OwnerEqualsPlayerId(Player player) { this.Owner = player.Id; }
+        Treasure Treasure { get; set; }
     }
 
-    public class Mine : IOwnerChecker, ICheckerArmy, IConsumerTreasure
+    public class Dwelling : IOwner
     {
-        public int Owner { get; set; } // владелец
-        public Army Army { get; set; } // армия
-        public Treasure Treasure { get; set; } // сокровище
-        public bool CheckPlayerCanBeatArmy(Player player) => player.CanBeat(Army);
-        public void OwnerEqualsPlayerId(Player player) { if (player.CanBeat(Army)) this.Owner = player.Id; }
-        public void ConsumerTreasure(Player player) { if (player.CanBeat(Army)) player.Consume(Treasure); }
+        public int Owner { get; set; }
     }
 
-    public class Creeps : ICheckerArmy, IConsumerTreasure
+    public class Mine : IOwner, IArmy, ITreasure
     {
-        public Army Army { get; set; } // армия
-        public Treasure Treasure { get; set; } // сокровище
-        public bool CheckPlayerCanBeatArmy(Player player) => player.CanBeat(Army);
-        public void ConsumerTreasure(Player player) { if (player.CanBeat(Army)) player.Consume(Treasure); }
-
+        public int Owner { get; set; }
+        public Army Army { get; set; }
+        public Treasure Treasure { get; set; }
     }
 
-    public class Wolfs : ICheckerArmy
+    public class Creeps : IArmy, ITreasure
     {
-        public Army Army { get; set; } // армия волЧАР
-        public bool CheckPlayerCanBeatArmy(Player player) => !(player.CanBeat(Army));
+        public Army Army { get; set; }
+        public Treasure Treasure { get; set; }
     }
 
-    public class ResourcePile : IConsumerTreasure
+    public class Wolfs : IArmy
     {
-        public Treasure Treasure { get; set; } // сокровище
-        public void ConsumerTreasure(Player player) { player.Consume(Treasure); }
+        public Army Army { get; set; }
+    }
+
+    public class ResourcePile : ITreasure
+    {
+        public Treasure Treasure { get; set; }
     }
 
     public static class Interaction
     {
         public static void Make(Player player, object mapObject)
         {
-            if (mapObject is IOwnerChecker)
-            {
-                var obj = mapObject as IOwnerChecker;
-                obj.OwnerEqualsPlayerId(player);
-            }
-            if (mapObject is IConsumerTreasure)
-            {
-                var obj = mapObject as IConsumerTreasure;
-                obj.ConsumerTreasure(player);
-            }
-            if (mapObject is ICheckerArmy)
-            {
-                var obj = mapObject as ICheckerArmy;
-                if (!obj.CheckPlayerCanBeatArmy(player)) 
+            if (mapObject is IArmy armyObj)
+                if (!player.CanBeat(armyObj.Army))
+                {
                     player.Die();
-            }
+                    return;
+                }
+            if (mapObject is IOwner ownerObj)
+                ownerObj.Owner = player.Id;
+            if (mapObject is ITreasure treasureObj)
+                player.Consume(treasureObj.Treasure);
         }
     }
 }
