@@ -14,7 +14,12 @@ namespace Inheritance.DataStructure
             TopicMessage = messageTopic;
         }
 
-        public override bool Equals(object obj) => this.CompareTo(obj as Category) == 0;
+        public override bool Equals(object obj)
+            => this is Category
+            && this != null
+            && obj != null 
+            && obj is Category 
+            && CompareTo(obj as Category) == 0;
 
         public override string ToString() 
             => Letter + "." + TypeMessage.ToString() + "." + TopicMessage.ToString();
@@ -25,7 +30,10 @@ namespace Inheritance.DataStructure
 
         public int CompareTo(object obj)
         {
-            var externalObject = obj as Category;
+            if (!(obj is Category externalObject) 
+                || obj == null && this == null ||
+                externalObject.Letter == null || this.Letter == null) return 0;
+
             if (Letter.CompareTo(externalObject.Letter) == -1) return -1;
             else if (Letter.CompareTo(externalObject.Letter) == 1) return 1;
 
@@ -39,12 +47,16 @@ namespace Inheritance.DataStructure
         }
 
         public static bool operator <=(Category catFirst, Category catSecond)
-            => catFirst.CompareTo(catSecond) == -1 || catFirst.CompareTo(catSecond) == 0;
+            => catFirst == null && catSecond == null ||
+            catFirst.CompareTo(catSecond) == -1 || catFirst.CompareTo(catSecond) == 0;
         public static bool operator >=(Category catFirst, Category catSecond)
-            => catFirst.CompareTo(catSecond) == 1 || catFirst.CompareTo(catSecond) == 0;
+            => catFirst == null && catSecond == null ||
+            catFirst.CompareTo(catSecond) == 1 || catFirst.CompareTo(catSecond) == 0;
         public static bool operator <(Category catFirst, Category catSecond)
-            => catFirst.CompareTo(catSecond) == -1;
+            => catFirst != null && catSecond != null 
+            && catFirst.CompareTo(catSecond) == -1;
         public static bool operator >(Category catFirst, Category catSecond)
-            => catFirst.CompareTo(catSecond) == 1;
+            => catFirst != null && catSecond != null
+            && catFirst.CompareTo(catSecond) == 1;
     }
 }
