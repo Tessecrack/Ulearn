@@ -4,9 +4,9 @@ namespace Inheritance.DataStructure
 {
     public class Category : IComparable
     {
-        public string Letter;
-        public MessageType TypeMessage;
-        public MessageTopic TopicMessage;
+        public string Letter { get; }
+        public MessageType TypeMessage { get; }
+        public MessageTopic TopicMessage { get; }
         public Category(string name, MessageType messageType, MessageTopic messageTopic)
         {
             Letter = name;
