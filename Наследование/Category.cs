@@ -1,83 +1,50 @@
-﻿using System;
+using System;
 
 namespace Inheritance.DataStructure
 {
     public class Category : IComparable
     {
-        string nameProduct;
-        MessageType messageType;
-        MessageTopic messageTopic;
-        public Category(string productName, MessageType typeMessage, MessageTopic topicMessage)
+        public string Letter;
+        public MessageType TypeMessage;
+        public MessageTopic TopicMessage;
+        public Category(string name, MessageType messageType, MessageTopic messageTopic)
         {
-            if (productName == "" || productName == null) nameProduct = "";
-            else nameProduct = productName;
-            messageType = typeMessage;
-            messageTopic = topicMessage;
+            Letter = name;
+            TypeMessage = messageType;
+            TopicMessage = messageTopic;
         }
+
+        public override bool Equals(object obj) => this.CompareTo(obj as Category) == 0;
+
+        public override string ToString() 
+            => Letter + "." + TypeMessage.ToString() + "." + TopicMessage.ToString();
+
+        public override int GetHashCode()
+            => Letter.GetHashCode() + (int)TypeMessage + (int)TopicMessage + TopicMessage.ToString().Length;
+        
+
         public int CompareTo(object obj)
         {
-            if (obj == null) return 1;
-            Category category = obj as Category;
+            var externalObject = obj as Category;
+            if (Letter.CompareTo(externalObject.Letter) == -1) return -1;
+            else if (Letter.CompareTo(externalObject.Letter) == 1) return 1;
 
-            if (this == null) return -1;
-            if (category == null) return 1;
+            if ((int)TypeMessage < (int)externalObject.TypeMessage) return -1;
+            else if ((int)TypeMessage > (int)externalObject.TypeMessage) return 1;
 
-            int comp = this.nameProduct.CompareTo(category.nameProduct);
-            if (comp == -1 || comp == 1) return comp;
-
-            if (this.messageType > category.messageType) return 1;
-            else if (this.messageType < category.messageType) return -1;
-
-            if (this.messageTopic > category.messageTopic) return 1;
-            else if (this.messageTopic < category.messageTopic) return -1;
+            if ((int)TopicMessage < (int)externalObject.TopicMessage) return -1;
+            else if ((int)TopicMessage > (int)externalObject.TopicMessage) return 1;
 
             return 0;
         }
-        public override bool Equals(object obj)
-        {
-            if (obj == null) return false;
-            Category outside = obj as Category;
-            if (outside == null) return false;
 
-            return
-                this.nameProduct == outside.nameProduct &&
-                this.messageType == outside.messageType &&
-                this.messageTopic == outside.messageTopic;
-        }
-        public override string ToString() => nameProduct + "." + messageType + "." + messageTopic;
-        public override int GetHashCode() =>
-            nameProduct.GetHashCode() + (int)messageType + (int)messageTopic + messageTopic.ToString().Length;
-        public static bool operator >(Category c1, Category c2)
-        {
-            if (c1 == null || c2 == null) return false;
-            if (c1.CompareTo(c2) == 1) return true;
-            else if (c1.CompareTo(c2) == -1) return false;
-            return ((int)c1.messageTopic +
-                (int)c1.messageType) >
-                ((int)c2.messageTopic +
-                (int)c2.messageType);
-        }
-        public static bool operator <(Category c1, Category c2)
-        {
-            if (c1 == null || c2 == null) return false;
-            if (c1.CompareTo(c2) == -1) return true;
-            else if (c1.CompareTo(c2) == 1) return false;
-            return ((int)c1.messageTopic +
-                (int)c1.messageType) <
-                ((int)c2.messageTopic +
-                (int)c2.messageType);
-        }
-        public static bool operator <= (Category c1, Category c2)
-        {
-            if (c1 == null || c2 == null) return false;
-            if (c1.CompareTo(c2) == -1 || c1.CompareTo(c2) == 0) return true;
-            else return false;
-        }
-        public static bool operator >=(Category c1, Category c2)
-        {
-            if (c1 == null || c2 == null) return false;
-            if (c1.CompareTo(c2) == 1 || c1.CompareTo(c2) == 0) return true;
-            else return false;
-        }
+        public static bool operator <=(Category catFirst, Category catSecond)
+            => catFirst.CompareTo(catSecond) == -1 || catFirst.CompareTo(catSecond) == 0;
+        public static bool operator >=(Category catFirst, Category catSecond)
+            => catFirst.CompareTo(catSecond) == 1 || catFirst.CompareTo(catSecond) == 0;
+        public static bool operator <(Category catFirst, Category catSecond)
+            => catFirst.CompareTo(catSecond) == -1;
+        public static bool operator >(Category catFirst, Category catSecond)
+            => catFirst.CompareTo(catSecond) == 1;
     }
 }
