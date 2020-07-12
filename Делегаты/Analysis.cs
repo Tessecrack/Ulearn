@@ -1,64 +1,56 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Delegates.PairsAnalysis
 {
     public static class Analysis
     {
         public static int FindMaxPeriodIndex(params DateTime[] data)
-            => data.Pairs().Select((data1, data2) => (data2 - data1).TotalSeconds).MaxIndex();
-
+            => data
+            .Pairs()
+            .Select((dataTime) => (dataTime.Item2 - dataTime.Item1).TotalSeconds).MaxIndex();
         public static double FindAverageRelativeDifference(params double[] data)
             => new AverageDifferenceFinder().Analyze(data);
-
-        public static IEnumerable<Tuple<T, T>> Pairs<T>(this IEnumerable<T> data)
-        {
-            bool firstElement = true;
-            bool empty = true;
-            T previousElement = default(T);
-            foreach (var element in data)
-            {
-                if (firstElement)
-                {
-                    previousElement = element;
-                    firstElement = false;
-                }
-                else
-                {
-                    yield return Tuple.Create(previousElement, element);
-                    previousElement = element;
-                    empty = false;
-                }
-            }
-            if (empty) throw new ArgumentException();
-        }
-
-        private static IEnumerable<TypeOut> Select<TypeIn, TypeOut>
-            (this IEnumerable<Tuple<TypeIn, TypeIn>> pairs, Func<TypeIn, TypeIn, TypeOut> insect)
-        {
-            foreach (var element in pairs)
-                yield return insect(element.Item1, element.Item2);
-        }
-
-        public static int MaxIndex<Type>(this IEnumerable<Type> data) where Type : IComparable
+        public static int MaxIndex<T>(this IEnumerable<T> data) where T : IComparable
         {
             int index = 0, i = 0;
-            var maxValue = default(Type);
-            bool firstElement = true;
-            bool empty = true;
-            foreach (var element in data)
+            var max = default(T);
+            bool first = true;
+            foreach (var item in data)
             {
-                if (firstElement)
-                { maxValue = element; firstElement = false; empty = false; }
-                else
+                if (first)
                 {
-                    if (element.CompareTo(maxValue) == 1)
-                    { index = i; maxValue = element; }
+                    max = item;
+                    first = false;
+                }
+                if (item.CompareTo(max) == 1)
+                {
+                    index = i;
+                    max = item;
                 }
                 i++;
             }
-            if (empty) throw new ArgumentException();
+            if (first) throw new ArgumentException();
             return index;
+        }
+
+        public static IEnumerable<Tuple<T, T>> Pairs<T>(this IEnumerable<T> data)
+        {
+            bool first = true;
+            T prev = default;
+            foreach (var item in data)
+            {
+                if (first)
+                {
+                    first = false;
+                    prev = item;
+                    continue;
+                }
+                yield return Tuple.Create(prev, item);
+                prev = item;
+            }
+            if (first) throw new ArgumentException();
         }
     }
 }
