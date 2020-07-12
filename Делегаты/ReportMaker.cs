@@ -1,101 +1,97 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
 namespace Delegates.Reports
 {
-    public delegate object MakeStatistics(IEnumerable<double> data);
-    public class Format
-    {
-        public Func<string, string> MakeCaption;
-        public Func<string> BeginList;
-        public Func<string> EndList;
-        public Func<string, string, string> MakeItem;
+	public abstract class StatisticMaker
+	{
+		public abstract string Caption { get; }
+		public abstract StatisticCreator StatisticCreator { get; }
+	}
+
+	public delegate object StatisticCreator(IEnumerable<double> data);
+	public abstract class FormatMaker
+	{
+		public abstract Func<string, string> CaptionMake { get; }
+		public abstract Func<string, string, string> ItemMake { get; }
+		public abstract Func<string> ListBegin { get; }
+		public abstract Func<string> ListEnd { get; }
     }
 
-    public class Statistic
+    public class FormatHTML : FormatMaker
     {
-        public string Caption;
-        public MakeStatistics MakeStatistics;
+        public override Func<string, string> CaptionMake => (cap) => $"<h1>{cap}</h1>"; 
+        public override Func<string, string, string> ItemMake
+			=> (valueType, entry) => $"<li><b>{valueType}</b>: {entry}"; 
+        public override Func<string> ListBegin  => () => "<ul>"; 
+        public override Func<string> ListEnd => () => "</ul>"; 
     }
 
-    public class HtmlFormat : Format
+    public class FormatMarkdown : FormatMaker
     {
-        public HtmlFormat()
-        {
-            MakeCaption = (caption) => $"<h1>{caption}</h1>";
-            BeginList = () => "<ul>";
-            EndList = () => "</ul>";
-            MakeItem = (valueType, entry) => $"<li><b>{valueType}</b>: {entry}";
-        }
+        public override Func<string, string> CaptionMake => (cap) => $"## {cap}\n\n";
+		public override Func<string, string, string> ItemMake
+			=> (value, entry) => $" * **{value}**: {entry}\n\n";
+		public override Func<string> ListBegin => () => "";
+		public override Func<string> ListEnd => () => "";
     }
-    public class MarkdownFormat : Format
-    {
-        public MarkdownFormat()
-        {
-            MakeCaption = (caption) => $"## {caption}\n\n";
-            BeginList = () => "";
-            EndList = () => "";
-            MakeItem = (valueType, entry) => $" * **{valueType}**: {entry}\n\n";
-        }
-    }
-    public class MeanAndStdStatistics : Statistic
-    {
-        public MeanAndStdStatistics()
-        {
-            Caption = "Mean and Std";
-            MakeStatistics = (data) =>
-            {
-                var listOfData = data.ToList();
-                var meanValue = data.Average();
-                var stdValue = Math.Sqrt(data.Select(z => Math.Pow(z - meanValue, 2)).Sum() / (listOfData.Count - 1));
-                return new MeanAndStd
-                {
-                    Mean = meanValue,
-                    Std = stdValue
-                };
-            };  
-        }
-    }
-    public class MedianStatistics : Statistic
-    {
-        public MedianStatistics()
-        {
-            Caption = "Median";
-            MakeStatistics = (data) =>
-            {
-                var list = data.OrderBy(z => z).ToList();
-                if (list.Count % 2 == 0)
-                    return (list[list.Count / 2] + list[list.Count / 2 - 1]) / 2;
-                return list[list.Count / 2];
-            };
-        }
-    } 
 
-    public class ReportMaker
-    {
-        public string ReportCreator(IEnumerable<Measurement> measurements, Format format, Statistic statistic)
-        {
-            var data = measurements.ToList();
-            var result = new StringBuilder();
-            result.Append(format.MakeCaption(statistic.Caption));
-            result.Append(format.BeginList());
-            result.Append(format.MakeItem("Temperature", statistic.MakeStatistics(data.Select(z => z.Temperature)).ToString()));
-            result.Append(format.MakeItem("Humidity", statistic.MakeStatistics(data.Select(z => z.Humidity)).ToString()));
-            result.Append(format.EndList());
-            return result.ToString();
-        }
+    public class MeanAndStdStatisticMaker : StatisticMaker
+	{
+		public override string Caption => "Mean and Std";
+		public override StatisticCreator StatisticCreator => (dataSource) =>
+		{
+			var data = dataSource.ToList();
+			var mean = data.Average();
+			var std = Math.Sqrt(data.Select(z => Math.Pow(z - mean, 2)).Sum() / (data.Count - 1));
+
+			return new MeanAndStd
+			{
+				Mean = mean,
+				Std = std
+			};
+		};
     }
+
+	public class MedianStatisticMaker : StatisticMaker
+	{
+		public override string Caption => "Median";
+		public override StatisticCreator StatisticCreator => (dataSource) =>
+		{
+			var list = dataSource.OrderBy(z => z).ToList();
+			if (list.Count % 2 == 0)
+				return (list[list.Count / 2] + list[list.Count / 2 - 1]) / 2;
+			return list[list.Count / 2];
+		};
+    }
+
 	public static class ReportMakerHelper
 	{
-		public static string MeanAndStdHtmlReport(IEnumerable<Measurement> data) => 
-            new ReportMaker().ReportCreator(data, new HtmlFormat(), new MeanAndStdStatistics());
-		public static string MedianMarkdownReport(IEnumerable<Measurement> data) =>
-            new ReportMaker().ReportCreator(data, new MarkdownFormat(), new MedianStatistics());
-		public static string MeanAndStdMarkdownReport(IEnumerable<Measurement> measurements) =>
-            new ReportMaker().ReportCreator(measurements, new MarkdownFormat(), new MeanAndStdStatistics());
-        public static string MedianHtmlReport(IEnumerable<Measurement> measurements) =>
-            new ReportMaker().ReportCreator(measurements, new HtmlFormat(), new MedianStatistics());
+		public static string MakeReport(IEnumerable<Measurement> dataSource , 
+			FormatMaker formatMaker, StatisticMaker statisticMaker)
+		{
+			var data = dataSource.ToList();
+			var result = new StringBuilder();
+			result.Append(formatMaker.CaptionMake(statisticMaker.Caption));
+			result.Append(formatMaker.ListBegin());
+			result.Append(formatMaker
+				.ItemMake("Temperature", 
+				statisticMaker.StatisticCreator(data.Select(z => z.Temperature)).ToString()));
+			result.Append(formatMaker.ItemMake("Humidity",
+				statisticMaker.StatisticCreator(data.Select(z => z.Humidity)).ToString()));
+			result.Append(formatMaker.ListEnd());
+			return result.ToString();
+		}
+
+		public static string MeanAndStdHtmlReport(IEnumerable<Measurement> data) 
+			=> MakeReport(data, new FormatHTML(), new MeanAndStdStatisticMaker());
+		public static string MedianMarkdownReport(IEnumerable<Measurement> data) 
+			=> MakeReport(data, new FormatMarkdown(), new MedianStatisticMaker());
+		public static string MeanAndStdMarkdownReport(IEnumerable<Measurement> measurements) 
+			=> MakeReport(measurements, new FormatMarkdown(), new MeanAndStdStatisticMaker());
+		public static string MedianHtmlReport(IEnumerable<Measurement> measurements) 
+			=> MakeReport(measurements, new FormatHTML(), new MedianStatisticMaker());
 	}
 }
