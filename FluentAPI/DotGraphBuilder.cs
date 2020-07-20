@@ -11,9 +11,9 @@ namespace FluentApi.Graph
         Ellipse
     }
 
-	public class DotGraphBuilder
+    public class DotGraphBuilder
     {
-		public static DotGraph DirectedGraph(string graphName) => new DotGraph(graphName, "digraph");
+	public static DotGraph DirectedGraph(string graphName) => new DotGraph(graphName, "digraph");
         public static DotGraph NondirectedGraph(string graphName) => new DotGraph(graphName, "graph");
     }
 
