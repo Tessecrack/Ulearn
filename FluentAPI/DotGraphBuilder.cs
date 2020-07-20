@@ -1,4 +1,5 @@
-﻿using System;
+using NUnit.Framework;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 
@@ -6,125 +7,114 @@ namespace FluentApi.Graph
 {
     public enum NodeShape
     {
-        Box,
+        Box, 
         Ellipse
     }
-    public class AddNodeBuilder : DotGraphBuilder
+
+	public class DotGraphBuilder
     {
-        private Graph graph;
-        private string nodeName;
-
-        public AddNodeBuilder(Graph myGraph, string myNodeName) : base(myGraph)
-        {
-            graph = myGraph;
-            nodeName = myNodeName;
-        }
-
-        public DotGraphBuilder With(Action<BuilderNode> action)
-        {
-            foreach (var node in graph.Nodes)
-                if (node.Name == nodeName)
-                {
-                    action(new BuilderNode(node));
-                    break;
-                }
-            return this;
-        }
+		public static DotGraph DirectedGraph(string graphName) => new DotGraph(graphName, "digraph");
+        public static DotGraph NondirectedGraph(string graphName) => new DotGraph(graphName, "graph");
     }
 
-    public class AddEdgeBuilder : DotGraphBuilder
+    public class DotGraph
     {
-        private Graph graph;
-        private string fromName;
-        private string toName;
-
-        public AddEdgeBuilder(Graph myGraph, string nodeFromName, string nodeToName) : base(myGraph)
+        protected Graph dotGraph;
+        private readonly bool isDirectGraph = false;
+        public DotGraph(Graph graph) => dotGraph = graph;
+        public DotGraph(string graphName, string typeGraph)
         {
-            graph = myGraph;
-            fromName = nodeFromName;
-            toName = nodeToName;
-        }
-
-        public DotGraphBuilder With(Action<BuilderEdge> action)
-        {
-            foreach (var edge in graph.Edges)
-                if (edge.SourceNode == fromName && edge.DestinationNode == toName)
-                {
-                    action(new BuilderEdge(edge));
-                    break;
-                }
-            return this;
-        }
-    }
-
-    public class DotGraphBuilder
-    {
-        private Graph dotGraph;
-
-        protected DotGraphBuilder(Graph graph) => dotGraph = graph;
-
-        public static DotGraphBuilder DirectedGraph(string graphName) => new DotGraphBuilder(new Graph(graphName, true, false));
-
-        public static DotGraphBuilder NondirectedGraph(string graphName) => new DotGraphBuilder(new Graph(graphName, false, false));
-
-        public AddNodeBuilder AddNode(string nodeName)
-        {
-            var nodeBuilder = new AddNodeBuilder(dotGraph, nodeName);
-            dotGraph.AddNode(nodeName);
-            return nodeBuilder;
-        }
-
-        public AddEdgeBuilder AddEdge(string nodeFromName, string nodeToName)
-        {
-            var edgeBuilder = new AddEdgeBuilder(dotGraph, nodeFromName, nodeToName);
-            dotGraph.AddEdge(nodeFromName, nodeToName);
-            return edgeBuilder;
+            if (typeGraph == "digraph")
+                isDirectGraph = true;
+            dotGraph = new Graph(graphName, isDirectGraph, false);
         }
 
         public string Build() => dotGraph.ToDotFormat();
+
+        public DotNode AddNode(string node)
+        {
+            dotGraph.AddNode(node);
+            return new DotNode(graph: dotGraph, node);
+        }
+
+        public DotEdge AddEdge(string from, string to)
+        {
+            dotGraph.AddEdge(from, to);
+            return new DotEdge(graph: dotGraph, from, to);
+        }
     }
 
-
-    public class BuilderNode : AttributesBuilder<BuilderNode>
+    public class DotNode : DotGraph
     {
-        public BuilderNode(GraphNode node) => Attributes = node.Attributes;
-        public BuilderNode Shape(NodeShape shape)
+        private readonly string node;
+        public DotNode(Graph graph, string node) : base (graph) => this.node = node;
+        public DotGraph With(Action<NodeBuilder> action)
+        {
+            foreach(var element in dotGraph.Nodes)
+                if (element.Name == node)
+                {
+                    action(new NodeBuilder(element));
+                    break;
+                }
+            return this;
+        }
+    }
+
+    public class DotEdge : DotGraph
+    {
+        private readonly (string from, string to) edge;
+        public DotEdge(Graph graph, string from, string to) : base(graph) => edge = (from, to);
+        public DotGraph With(Action<EdgeBuilder> action)
+        {
+            foreach(var element in dotGraph.Edges)
+                if (element.SourceNode == edge.from && element.DestinationNode == edge.to)
+                {
+                    action(new EdgeBuilder(element));
+                    break;
+                }
+            return this;
+        }
+    }
+
+    public class NodeBuilder : Attributess<NodeBuilder>
+    {
+        public NodeBuilder(GraphNode node) => Attributes = node.Attributes;
+        public NodeBuilder Shape(NodeShape shape)
         {
             Attributes["shape"] = shape.ToString().ToLower();
             return this;
         }
     }
 
-    public class BuilderEdge : AttributesBuilder<BuilderEdge>
+    public class EdgeBuilder : Attributess<EdgeBuilder>
     {
-        public BuilderEdge(GraphEdge edge) => Attributes = edge.Attributes;
-        public BuilderEdge Weight(int weight)
+        public EdgeBuilder(GraphEdge edge) => Attributes = edge.Attributes;
+        public EdgeBuilder Weight(int weight)
         {
             Attributes["weight"] = weight.ToString();
             return this;
         }
     }
-    public class AttributesBuilder<TypeAttribute>
-        where TypeAttribute : class
+
+    public class Attributess<T> where T : class
     {
         protected Dictionary<string, string> Attributes = new Dictionary<string, string>();
-        public TypeAttribute Label(string label)
+        public T Color(string clr)
         {
-            Attributes["label"] = label;
-            return this as TypeAttribute;
+            Attributes["color"] = clr;
+            return this as T;
+        }
+		
+        public T Label(string lbl)
+        {
+            Attributes["label"] = lbl;
+            return this as T;
         }
 
-        public TypeAttribute FontSize(int fontSize)
+        public T FontSize(int fSize)
         {
-            Attributes["fontsize"] = fontSize.ToString();
-            return this as TypeAttribute;
+            Attributes["fontsize"] = fSize.ToString();
+            return this as T;
         }
-
-        public TypeAttribute Color(string color)
-        {
-            Attributes["color"] = color;
-            return this as TypeAttribute;
-        }
-
     }
 }
