@@ -1,69 +1,83 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Memory.Timers
 {
     public class Timer : IDisposable
     {
-        private static int responseTimer = 0;
-        public static string Report { get => reportBuilder.ToString(); set { } }
-        private Stopwatch tick = new Stopwatch();
+        private static int valueOfTime = 0;
+
+        private readonly Stopwatch tikTok = new Stopwatch();
 
         private string nameTime;
+
         private bool disposedValue;
 
-        private static StringBuilder reportBuilder = new StringBuilder();
-        private static int parents = -1;
+        public static string Report => stringReportBuilder.ToString();
+        private static StringBuilder stringReportBuilder = new StringBuilder();
+        private static int beforeThis = -1;
+        public static Timer Start(string patronymicTime = "") => new Timer(patronymicTime);
 
-
-        public Timer(string name = "")
+        public Timer(string timeName = "")
         {
-            _ = name == "" ? nameTime = "*" : nameTime = name;
-            if (parents == -1) reportBuilder = new StringBuilder();
-            tick.Start();
-            parents++;
+            nameTime = timeName == "" ? "*" : timeName;
+            if (beforeThis == -1) stringReportBuilder = new StringBuilder();
+            tikTok.Start();
+            beforeThis++;
         }
-        public static Timer Start(string name = "") => new Timer(name);
+
         public void Dispose()
         {
             if (!disposedValue)
             {
-                tick.Stop();
-                responseTimer += (int)tick.ElapsedMilliseconds;
-                var spacesBeforeName = new string(' ', parents * 4);
-                var spacesAfterName = new string(' ', 20 - nameTime.Length - parents * 4);
+                tikTok.Stop();
+                valueOfTime += GetAroundValue((int)tikTok.ElapsedMilliseconds);
+                var beforeNameTime = new string(' ', beforeThis * 4);
+                var afterNameTime = new string(' ', 20 - nameTime.Length - beforeThis * 4);
 
-                var result = spacesBeforeName + nameTime + spacesAfterName + ": "
-                    + tick.ElapsedMilliseconds.ToString() + "\n";
+                var comdom = GetAroundValue((int)tikTok.ElapsedMilliseconds);
 
-                if (CheckRest(result)) return;
-                reportBuilder.Append(result);
-                parents--;
+                var resultName = beforeNameTime
+                    + nameTime
+                    + afterNameTime + ": "
+                    + comdom + "\n";
+
+                if (IsRestTime(resultName)) return;
+                stringReportBuilder.Append(resultName);
+                beforeThis--;
                 disposedValue = true;
             }
         }
-        private bool CheckRest(string result)
+        private int GetAroundValue(int value)
         {
-            if (reportBuilder.Length != 0 && reportBuilder[parents * 4] == ' ')
+            int num = value % 10;
+            while(num != 0)
             {
-                var res = responseTimer - tick.ElapsedMilliseconds;
-                reportBuilder.Insert(0, result);
-                reportBuilder.Append(new string(' ', parents * 4 + 4) + "Rest"
-                    + new string(' ', 20 - 8 - parents * 4) + ": " +
-                        res.ToString() + "\n");
-                parents--;
+                var ten = (value / 10) % 10;
+                if (ten == 0) value--;
+                else value++;
+                num = value % 10;
+            }
+            return value;
+        }
+        private bool IsRestTime(string res)
+        {
+            if (stringReportBuilder.Length != 0 && stringReportBuilder[beforeThis * 4] == ' ')
+            {
+                var restTime = GetAroundValue((int)(valueOfTime - tikTok.ElapsedMilliseconds));
+                stringReportBuilder.Insert(0, res);
+                stringReportBuilder.Append(
+                    new string(' ', beforeThis * 4 + 4)
+                    + "Rest"
+                    + new string(' ', 20 - 8 - beforeThis * 4)
+                    + ": "
+                    + restTime.ToString() + "\n");
+                beforeThis--;
                 return true;
             }
             return false;
         }
-        ~Timer()
-        {
-
-        }
+        ~Timer() { }
     }
 }
