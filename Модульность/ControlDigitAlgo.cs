@@ -21,24 +21,24 @@ namespace SRP.ControlDigit
 			return number.GetDigitalSum(1).GetControlNumber(10);
 		}
 	}
-
-	public static class Extensions
+	
+    public static class Extensions
     {
-		public static int GetDigitalSum(this long number, int factor, bool check = true)
+	public static int GetDigitalSum(this long number, int factor, bool check = true)
         {
-			var sum = 0;
-			do
-			{
-				var value = (int)(number % 10);
-				sum += factor * value;
-				factor = check ? 4 - factor : ++factor;
-				number /= 10;
-			}
-			while (number > 0);
-			return sum;
+		var sum = 0;
+		do
+		{
+			var value = (int)(number % 10);
+			sum += factor * value;
+			factor = check ? 4 - factor : ++factor;
+			number /= 10;
+		}
+		while (number > 0);
+		return sum;
         }
 
-		public static int GetControlNumber(this int number, int coef)
+      public static int GetControlNumber(this int number, int coef)
 			=> number % coef == 0 ? number % coef : coef - number % coef;
 	}
 }
