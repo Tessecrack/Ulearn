@@ -1,98 +1,83 @@
-﻿using System;
+using NUnit.Framework;
+using System;
 using System.IO;
-using System.Collections.Generic;
 using System.Text;
-using System.Linq;
+using System.Collections.Generic;
 
 namespace Streams.Resources
 {
     public class ResourceReaderStream : Stream
     {
-        private Stream testStream;
-        private byte[] byteKey;
-        private bool finish = false;
-        private bool seekValue = false;        
-
+        private readonly char[] separators = new char[] { '\0', '\u0001' };
+        private readonly Stream stream;
+        private readonly string key;
+        private bool seek = false;
+        private bool returned = false;
+        private readonly int bufferSize = Constants.BufferSize;
         public ResourceReaderStream(Stream stream, string key)
         {
-            testStream = new BufferedStream(stream, 1024);
-            this.byteKey = Encoding.ASCII.GetBytes(key);
+            this.stream = new BufferedStream(stream, bufferSize);
+            this.key = key;
         }
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            if (finish) return 0;
-            if (!seekValue) SeekValue();
-            seekValue = true;
-            return ReadFieldValue(buffer, offset, count);
+            if (!seek) SeekValue();
+            if (!returned)
+                return ReadFieldValue(buffer, offset, count);
+            return 0;
         }
 
         private void SeekValue()
         {
-            if (SeekKey()) 
-                while(true)
-                {
-                    var byteFromStream = testStream.ReadByte();
-                    if (byteFromStream == 1) return;
-                }
-        }
-
-        private bool SeekKey()
-        {
-            var data = new List<byte>();
-            while(true)
+            var byteList = new List<byte>();
+            while (true)
             {
-                var byteFromStream = testStream.ReadByte();
-                if (IsEndStream(byteFromStream)) return false;
-                data.Add((byte)byteFromStream);
-                if (data.SequenceEqual(byteKey)) return true;
-                if (data.Count == byteKey.Length) data.RemoveAt(0);
+                var byteRead = (byte)stream.ReadByte();
+                byteList.Add(byteRead);
+                if (byteList.Count > key.Length)
+                    byteList.RemoveAt(0);
+                if (Encoding.ASCII.GetString(byteList.ToArray()) == key || byteRead == 255)
+                {
+                    stream.ReadByte();
+                    stream.ReadByte();
+                    seek = true;
+                    break;
+                }
             }
         }
 
         private int ReadFieldValue(byte[] buffer, int offset, int count)
         {
-            for (int i = 0; i < count; i++)
+            int counter;
+            for (counter = offset; counter < count + offset;)
             {
-                var byteFromStream = ParseByte();
-                if (IsEndStream(byteFromStream)) return i;
-                buffer[i + offset] = (byte)byteFromStream;
+                var readByte1 = (byte)stream.ReadByte();
+                var readByte2 = (byte)stream.ReadByte();
+                if (readByte1 == separators[1] || readByte2 == separators[1] || readByte1 == 255)
+                {
+                    if (counter > 0 && buffer[counter - 1] == separators[0])
+                        counter--;
+                    break;
+                }
+                if (!(readByte1 == readByte2 && readByte1 == separators[0]))
+                    buffer[counter++] = readByte1;
+                buffer[counter++] = readByte2;
+                if (counter >= count + offset - 1) return counter + 1;
             }
-            return count;
-        }
-        private bool IsEndStream(int byteFromStream)
-        {
-            if (byteFromStream == -1)
-            {
-                finish = true;
-                return true;
-            }
-            return false;
-        }
-        private int ParseByte()
-        {
-            int currentByte = testStream.ReadByte();
-            int nextByte;
-            if (currentByte == 0) nextByte = testStream.ReadByte();
-            else nextByte = currentByte;
-            if (currentByte == -1 || nextByte == -1 || currentByte == 0 && nextByte == 1) return -1;
-            return nextByte;
+            returned = true;
+            return counter;
         }
 
-        #region
-        public override void Flush()
-            => testStream.Flush();
-        public override long Seek(long offset, SeekOrigin origin)
-            => testStream.Seek(offset, origin);
-        public override void SetLength(long value) => testStream.SetLength(value);
-        public override void Write(byte[] buffer, int offset, int count) => testStream.Write(buffer, offset, count);
-        public override bool CanRead => true;
-        public override bool CanSeek => true;
-        public override bool CanWrite => true;
-        public override long Length => testStream.Length;
+        public override void Flush() { }
+        public override bool CanRead => throw new NotImplementedException();
+        public override bool CanSeek => throw new NotImplementedException();
+        public override bool CanWrite => throw new NotImplementedException();
+        public override long Length => throw new NotImplementedException();
         public override long Position
         { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        #endregion
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotImplementedException();
+        public override void SetLength(long value) => throw new NotImplementedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotImplementedException();
     }
-
 }
