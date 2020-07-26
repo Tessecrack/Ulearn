@@ -25,11 +25,11 @@ namespace Streams.Compression
         public override int Read(byte[] buffer, int offset, int count)
         {
             int subCounter;
-            for (subCounter = offset; subCounter < repeatByteStock; subCounter++)
+            for (subCounter = 0; subCounter < repeatByteStock; subCounter++)
                 buffer[subCounter] = (byte)valueByteStock;
             valueByteStock = -1;
             repeatByteStock = -1;
-            for (counter = subCounter; counter < count;)
+            for (counter = subCounter; counter < count + offset;)
             {
                 var valueByte = baseStream.ReadByte();
                 var repeatByte = baseStream.ReadByte();
@@ -37,13 +37,15 @@ namespace Streams.Compression
                     return valueByte == -1 ? counter : throw new InvalidOperationException();
                 for (int i = 0; i < repeatByte; i++)
                 {
-                    if (counter == buffer.Length)
+                    if (counter + offset == buffer.Length)
                     {
                         valueByteStock = valueByte;
                         repeatByteStock = repeatByte - i;
-                        return counter;
+                        if (offset > 0)
+                            buffer[buffer.Length - 1] = 0;
+                        return counter - offset;
                     }
-                    buffer[counter++] = (byte)valueByte;
+                    buffer[counter++ + offset] = (byte)valueByte;
                 }
             }
             return counter;
@@ -64,6 +66,7 @@ namespace Streams.Compression
                     (byte)(countRepeatByte - offset) : countRepeatByte);
             }
         }
+
         public override bool CanRead => read;
         public override bool CanSeek => false;
         public override bool CanWrite => !read;
